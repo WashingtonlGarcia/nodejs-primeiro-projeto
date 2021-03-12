@@ -10,7 +10,7 @@ const verifyIfExistAccountCPF = (req, res, next) => {
   const { cpf } = req.headers;
   const costomer = customers.find((costomer) => costomer.cpf === cpf);
   if (!costomer) return res.status(400).json({ error: "Customer not found" });
-  request.customer = costomer;
+  req.customer = costomer;
   return next();
 };
 
@@ -24,9 +24,24 @@ app.post("/account", (req, res) => {
   return res.status(201).json(account);
 });
 
-app.get("/statement",verifyIfExistAccountCPF, (req, res) => {
+app.get("/statement", verifyIfExistAccountCPF, (req, res) => {
   const { customer } = req;
   return res.json(customer);
+});
+
+app.post("/deposit", verifyIfExistAccountCPF, (req, res) => {
+  const { description, amount } = req.body;
+  const { customer } = req;
+
+  const stamtementOperation = {
+    description,
+    amount,
+    created_at: new Date(),
+    type: "credit",
+  };
+  customer.statement.push(stamtementOperation);
+
+  return res.status(201).send();
 });
 
 app.listen(3003, () => {
