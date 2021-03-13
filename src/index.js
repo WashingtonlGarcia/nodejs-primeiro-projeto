@@ -100,7 +100,13 @@ app.get("/accounts", (req, res) => {
 app.delete("/account", verifyIfExistAccountCPF, (req, res) => {
   const { customer } = req;
   customers.pop(customer);
-  return res.send();
+  return res.status(200).json(customers);
+});
+
+app.get("/balance", verifyIfExistAccountCPF, (req, res) => {
+  const { customer } = req;
+  const balance = getBalance(customer.statement);
+  return res.json(balance);
 });
 app.listen(3003, () => {
   console.log("Started backend in port 3003!!");
