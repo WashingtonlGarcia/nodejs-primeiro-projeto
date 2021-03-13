@@ -14,6 +14,14 @@ const verifyIfExistAccountCPF = (req, res, next) => {
   return next();
 };
 
+const getBalance = (statement) => {
+  return statement.reduce((acc, operation) => {
+    if (operation.type == "credit") {
+      return acc + operation.amout;
+    }
+    return acc - operation.amout;
+  }, 0);
+};
 app.post("/account", (req, res) => {
   const { cpf, name } = req.body;
   if (customers.some((customer) => customer.cpf === cpf)) {
@@ -33,17 +41,32 @@ app.post("/deposit", verifyIfExistAccountCPF, (req, res) => {
   const { description, amount } = req.body;
   const { customer } = req;
 
-  const stamtementOperation = {
+  const statementOperation = {
     description,
     amount,
     created_at: new Date(),
     type: "credit",
   };
-  customer.statement.push(stamtementOperation);
+  customer.statement.push(statementOperation);
 
   return res.status(201).send();
 });
 
+app.post("/withdraw", verifyIfExistAccountCPF, (req, res) => {
+  const { amount } = req.body;
+  const { customer } = req;
+  const balance = getBalance(customer.statement);
+
+  if (balance < amount)
+    return res.status(400).json({ error: "Insufficient funds!" });
+  const statementOperation = {
+    amount,
+    created_at: new Date(),
+    type: "debit",
+  };
+  customer.statement.push(statementOperation);
+  return res.status(201).send();
+});
 app.listen(3003, () => {
-  console.log("Started backend in port 3334!!");
+  console.log("Started backend in port 3003!!");
 });
