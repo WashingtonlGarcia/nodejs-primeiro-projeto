@@ -1,4 +1,3 @@
-const { request } = require("express");
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 
@@ -8,9 +7,9 @@ app.use(express.json());
 
 const verifyIfExistAccountCPF = (req, res, next) => {
   const { cpf } = req.headers;
-  const costomer = customers.find((costomer) => costomer.cpf === cpf);
-  if (!costomer) return res.status(400).json({ error: "Customer not found" });
-  req.customer = costomer;
+  const customer = customers.find((costomer) => costomer.cpf === cpf);
+  if (!customer) return res.status(400).json({ error: "Customer not found" });
+  req.customer = customer;
   return next();
 };
 
@@ -22,6 +21,7 @@ const getBalance = (statement) => {
     return acc - operation.amout;
   }, 0);
 };
+
 app.post("/account", (req, res) => {
   const { cpf, name } = req.body;
   if (customers.some((customer) => customer.cpf === cpf)) {
@@ -66,6 +66,41 @@ app.post("/withdraw", verifyIfExistAccountCPF, (req, res) => {
   };
   customer.statement.push(statementOperation);
   return res.status(201).send();
+});
+
+app.get("/statement/date", verifyIfExistAccountCPF, (req, res) => {
+  const { customer } = req;
+  const { date } = req.query;
+  const dateFormat = new Date(date + " 00:00");
+  const statement = customer.statement.filter(
+    (statement) =>
+      statement.created_at.toDateString() == new Date(dateFormat).toDateString()
+  );
+  return res.json(statement);
+});
+
+app.put("/account", verifyIfExistAccountCPF, (req, res) => {
+  const { name } = req.body;
+  const { customer } = req;
+
+  customer.name = name;
+
+  return res.status(201).send();
+});
+
+app.get("/account", verifyIfExistAccountCPF, (req, res) => {
+  const { customer } = req;
+  return res.json(customer);
+});
+
+app.get("/accounts", (req, res) => {
+  return res.json(customers);
+});
+
+app.delete("/account", verifyIfExistAccountCPF, (req, res) => {
+  const { customer } = req;
+  customers.pop(customer);
+  return res.send();
 });
 app.listen(3003, () => {
   console.log("Started backend in port 3003!!");
